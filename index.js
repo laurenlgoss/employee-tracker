@@ -18,18 +18,67 @@ const question = [
     {
         type: "list",
         message: "What would you like to do?",
-        choices: ["View All Departments", "View All Roles", "View All Employees", "Add A Department", "Add A Role", "Add An Employee", "Update An Employee Role"],
+        choices: ["View All Departments", "View All Roles", "View All Employees", "Add A Department", "Add A Role", "Add An Employee", "Update An Employee Role", "Quit"],
         name: "choice",
     }
 ];
 
-// Initialize inquirer session
 function init() {
+    mainMenu();
+};
+
+// Initialize inquirer session
+function mainMenu() {
     inquirer
         .prompt(question)
         .then((response) => {
-            console.log(response.choice);
-        });
+            // If user chooses to view all departments,
+            if (response.choice === "View All Departments") {
+                console.log("department table");
+
+                return mainMenu();
+            } 
+            // If user chooses to view all roles,
+            else if (response.choice === "View All Roles") {
+                console.log("role table");
+
+                return mainMenu();
+            } 
+            // If user chooses to view all employees,
+            else if (response.choice === "View All Employees") {
+                console.log("employee table");
+
+                return mainMenu();
+            } 
+            // If user chooses to add a department,
+            else if (response.choice === "Add A Department") {
+                console.log("add department row");
+
+                return mainMenu();
+            } 
+            // If user chooses to add a role,
+            else if (response.choice === "Add A Role") {
+                console.log("add role row");
+
+                return mainMenu();
+            } 
+            // If user chooses to add an employee,
+            else if (response.choice === "Add An Employee") {
+                console.log("add employee row");
+
+                return mainMenu();
+            } 
+            // If user chooses to update an employee role,
+            else if (response.choice === "Update An Employee Role") {
+                console.log("change employee role");
+
+                return mainMenu();
+            } 
+            // If user chooses to quit,
+            else if (response.choice === "Quit") {
+                return;
+            }
+        })
 };
 
 init();
