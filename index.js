@@ -35,30 +35,21 @@ function mainMenu() {
             // If user chooses to view all departments,
             if (response.choice === "View All Departments") {
                 // Render department table to terminal
-                workplaceDatabase.query("SELECT * FROM department LIMIT 100;", function (err, results) {
-                    console.log(`\n`);
-                    console.table(results);
-                });
+                renderTable("SELECT * FROM department LIMIT 100;");
 
                 return mainMenu();
             }
             // If user chooses to view all roles,
             else if (response.choice === "View All Roles") {
-                // Render role table to terminal
-                workplaceDatabase.query("SELECT * FROM role JOIN department ON role.department_id = department.id;", function (err, results) {
-                    console.log(`\n`);
-                    console.table(results);
-                });
+                // Join role and department tables, render table to terminal
+                renderTable("SELECT * FROM role JOIN department ON role.department_id = department.id;");
 
                 return mainMenu();
             }
             // If user chooses to view all employees,
             else if (response.choice === "View All Employees") {
-                // Render employee table to terminal
-                workplaceDatabase.query("SELECT * FROM employee JOIN role ON employee.role_id = role.id;", function (err, results) {
-                    console.log(`\n`);
-                    console.table(results);
-                });
+                // Join employee and role tables, render table to terminal
+                renderTable("SELECT * FROM employee JOIN role ON employee.role_id = role.id;");
 
                 return mainMenu();
             }
@@ -91,6 +82,14 @@ function mainMenu() {
                 return;
             }
         })
+}
+
+// Take in query, render given table to terminal
+function renderTable(query) {
+    workplaceDatabase.query(query, function (err, results) {
+        console.log(`\n`);
+        console.table(results);
+    });
 }
 
 init();
