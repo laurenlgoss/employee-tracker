@@ -34,59 +34,63 @@ function mainMenu() {
         .then((response) => {
             // If user chooses to view all departments,
             if (response.choice === "View All Departments") {
-                renderTable("department");
+                // Render department table to terminal
+                workplaceDatabase.query("SELECT * FROM department LIMIT 100;", function (err, results) {
+                    console.log(`\n`);
+                    console.table(results);
+                });
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to view all roles,
             else if (response.choice === "View All Roles") {
-                renderTable("role");
+                // Render role table to terminal
+                workplaceDatabase.query("SELECT * FROM role JOIN department ON role.department_id = department.id;", function (err, results) {
+                    console.log(`\n`);
+                    console.table(results);
+                });
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to view all employees,
             else if (response.choice === "View All Employees") {
-                renderTable("employee");
+                // Render employee table to terminal
+                workplaceDatabase.query("SELECT * FROM employee JOIN role ON employee.role_id = role.id;", function (err, results) {
+                    console.log(`\n`);
+                    console.table(results);
+                });
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to add a department,
             else if (response.choice === "Add A Department") {
                 console.log("add department row");
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to add a role,
             else if (response.choice === "Add A Role") {
                 console.log("add role row");
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to add an employee,
             else if (response.choice === "Add An Employee") {
                 console.log("add employee row");
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to update an employee role,
             else if (response.choice === "Update An Employee Role") {
                 console.log("change employee role");
 
                 return mainMenu();
-            } 
+            }
             // If user chooses to quit,
             else if (response.choice === "Quit") {
                 return;
             }
         })
-}
-
-// Render table to terminal
-function renderTable(table) {
-    workplaceDatabase.query(`SELECT * FROM ${table} LIMIT 100`, function(err, results) {
-        console.log(`\n`);
-        console.table(results);
-    })
 }
 
 init();
