@@ -18,14 +18,14 @@ const question = [
     {
         type: "list",
         message: "What would you like to do?",
-        choices: ["View All Departments", "View All Roles", "View All Employees", "Add A Department", "Add A Role", "Add An Employee", "Update An Employee Role", "Quit"],
+        choices: ["View All Departments", "View All Roles", "View All Employees", "Add A Department", "Add A Role", "Add An Employee", "Update An Employee Role", "Quit", new inquirer.Separator()],
         name: "choice",
     }
 ];
 
 function init() {
     mainMenu();
-};
+}
 
 // Initialize inquirer session
 function mainMenu() {
@@ -34,19 +34,19 @@ function mainMenu() {
         .then((response) => {
             // If user chooses to view all departments,
             if (response.choice === "View All Departments") {
-                console.log("department table");
+                renderTable("department");
 
                 return mainMenu();
             } 
             // If user chooses to view all roles,
             else if (response.choice === "View All Roles") {
-                console.log("role table");
+                renderTable("role");
 
                 return mainMenu();
             } 
             // If user chooses to view all employees,
             else if (response.choice === "View All Employees") {
-                console.log("employee table");
+                renderTable("employee");
 
                 return mainMenu();
             } 
@@ -79,6 +79,14 @@ function mainMenu() {
                 return;
             }
         })
-};
+}
+
+// Render table to terminal
+function renderTable(table) {
+    workplaceDatabase.query(`SELECT * FROM ${table} LIMIT 100`, function(err, results) {
+        console.log(`\n`);
+        console.table(results);
+    })
+}
 
 init();
