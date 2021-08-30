@@ -32,25 +32,6 @@ const addDepartmentQuestion = [
     }
 ];
 
-// Create questions to ask user for information about their new role
-const addRoleQuestions = [
-    {
-        type: "input",
-        message: "Enter title of role: ",
-        name: "title"
-    },
-    {
-        type: "input",
-        message: "Enter salary of role: ",
-        name: "salary"
-    },
-    {
-        type: "input",
-        message: "Enter department of role: ",
-        name: "department"
-    }
-];
-
 function init() {
     mainMenu();
 }
@@ -59,7 +40,7 @@ function init() {
 function mainMenu() {
     inquirer
         .prompt(menuQuestion)
-        .then( async (response) => {
+        .then(async (response) => {
             if (response.choice !== "Quit") {
                 // If user chooses to view all departments,
                 if (response.choice === "View All Departments") {
@@ -82,8 +63,12 @@ function mainMenu() {
                 }
                 // If user chooses to view all employees,
                 else if (response.choice === "View All Employees") {
-                    // Join employee and role tables
-                    let employeeData = await interactWithDatabase("SELECT * FROM employee JOIN role ON employee.role_id = role.id;");
+                    // Join employee, department and role tables
+                    let employeeData = await interactWithDatabase(`SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee_name, role.title, role.salary, department.name AS department, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name 
+                    FROM employee 
+                    JOIN role ON employee.role_id = role.id 
+                    LEFT JOIN department ON role.department_id = department.id 
+                    LEFT JOIN employee manager ON manager.id = employee.manager_id;`);
 
                     // Render table to terminal
                     console.table(employeeData);
@@ -101,7 +86,11 @@ function mainMenu() {
 
                             // Insert new department into department table
                             workplaceDatabase.query(`INSERT INTO department (name) VALUES ("${uppercaseDepartment}");`, function (err, results) {
-                                console.log(`${uppercaseDepartment} successfully inserted into department table.`);
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log(`${uppercaseDepartment} successfully inserted into department table.`);
+                                }
 
                                 return mainMenu();
                             });
@@ -109,45 +98,26 @@ function mainMenu() {
                 }
                 // If user chooses to add a role,
                 else if (response.choice === "Add A Role") {
-                    // Prompt user to enter information about role
-                    inquirer
-                        .prompt(addRoleQuestions)
-                        .then( async (response) => {
-                            // Ensure department and role name are capitalized
-                            let uppercaseDepartment = capitalizeFirstLetter(response.department);
-                            let uppercaseRole = capitalizeFirstLetter(response.title);
-
-                            // // Convert given department name into department id
-                            let departmentId = await interactWithDatabase(`SELECT id FROM department WHERE name = "${uppercaseDepartment}";`);
-
-                            console.log("departmentId: " + departmentId);
-
-                            // Insert new role into role table
-                            workplaceDatabase.query(`INSERT INTO role (title, salary, department_id) VALUES ("${uppercaseRole}", ${response.salary}, ${departmentId});`, function (err, results) {
-                                console.log(`${uppercaseRole} successfully inserted into role table.`);
-
-                                return mainMenu();
-                            });
-                        })
-                }
+                        addRole();
+                    }
                 // If user chooses to add an employee,
                 else if (response.choice === "Add An Employee") {
-                    console.log("add employee row");
+                        console.log("add employee row");
 
-                    return mainMenu();
-                }
-                // If user chooses to update an employee role,
-                else if (response.choice === "Update An Employee Role") {
-                    console.log("change employee role");
+                        return mainMenu();
+                    }
+                    // If user chooses to update an employee role,
+                    else if (response.choice === "Update An Employee Role") {
+                        console.log("change employee role");
 
-                    return mainMenu();
+                        return mainMenu();
+                    }
                 }
-            }
-            // If user chooses to quit,
-            else {
-                return;
-            }
-        })
+                // If user chooses to quit,
+                else {
+                    return;
+                }
+            })
 }
 
 // Return promise with results of given MySQL query
@@ -161,6 +131,56 @@ function interactWithDatabase(query) {
             }
         })
     });
+}
+
+// Add new role to role table
+async function addRole() {
+    // Retrieve all departments
+    const departments = await interactWithDatabase("SELECT * FROM department;");
+
+    const departmentArray = departments.map(department => ({
+        name: department.name,
+        value: department.id
+    }))
+
+    // Ask user for information about their new role
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "Enter title of role: ",
+                name: "title"
+            },
+            {
+                type: "input",
+                message: "Enter salary of role: ",
+                name: "salary"
+            },
+            {
+                type: "list",
+                choices: departmentArray,
+                message: "Enter department of role: ",
+                name: "department"
+            }
+        ])
+        .then((response) => {
+            const roleObject = {
+                title: capitalizeFirstLetter(response.title),
+                salary: response.salary,
+                department_id: response.department
+            }
+
+            // Insert new role into role table
+            workplaceDatabase.query("INSERT INTO role SET ?", roleObject, function (err, results) {
+                if (results.affectedRows === 1) {
+                    console.log(`${response.title} was successfully added to role table.`);
+
+                    return mainMenu();
+                } else {
+                    console.log(err);
+                }
+            })
+        })
 }
 
 // Capitalize first letter of inputted string
