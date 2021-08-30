@@ -189,6 +189,9 @@ async function addEmployee() {
         value: employee.id
     }))
 
+    // Add "None" object to employeeArray that returns the value null
+    employeeArray.unshift({name: "None", value: null});
+
     // Prompt user for information about their new employee
     inquirer
         .prompt([
