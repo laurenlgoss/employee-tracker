@@ -13,25 +13,6 @@ const workplaceDatabase = mysql.createConnection(
     console.log("Connected to the workplace_db database.")
 );
 
-// Create a question to ask user how they would like to interact with the database
-const menuQuestion = [
-    {
-        type: "list",
-        message: "What would you like to do?",
-        choices: ["View All Departments", "View All Roles", "View All Employees", "Add A Department", "Add A Role", "Add An Employee", "Update An Employee Role", "Quit", new inquirer.Separator()],
-        name: "choice"
-    }
-];
-
-// Create a question to ask user for information about their new department
-const addDepartmentQuestion = [
-    {
-        type: "input",
-        message: "Enter name of department: ",
-        name: "name"
-    }
-];
-
 function init() {
     mainMenu();
 }
@@ -39,62 +20,37 @@ function init() {
 // Initialize inquirer session
 function mainMenu() {
     inquirer
-        .prompt(menuQuestion)
-        .then(async (response) => {
+        .prompt([
+            {
+                type: "list",
+                message: "What would you like to do?",
+                choices: ["View All Departments", "View All Roles", "View All Employees", "Add A Department", "Add A Role", "Add An Employee", "Update An Employee Role", "Quit", new inquirer.Separator()],
+                name: "choice"
+            }
+        ])
+        .then((response) => {
             if (response.choice !== "Quit") {
                 // If user chooses to view all departments,
                 if (response.choice === "View All Departments") {
-                    let departmentData = await interactWithDatabase("SELECT * FROM department LIMIT 100;");
-
-                    // Render table to terminal
-                    console.table(departmentData);
-
-                    return mainMenu();
+                    renderTable("SELECT * FROM department LIMIT 100;");
                 }
                 // If user chooses to view all roles,
                 else if (response.choice === "View All Roles") {
                     // Join role and department tables
-                    let roleData = await interactWithDatabase("SELECT * FROM role JOIN department ON role.department_id = department.id;");
-
-                    // Render table to terminal
-                    console.table(roleData);
-
-                    return mainMenu();
+                    renderTable("SELECT * FROM role JOIN department ON role.department_id = department.id;");
                 }
                 // If user chooses to view all employees,
                 else if (response.choice === "View All Employees") {
                     // Join employee, department and role tables
-                    let employeeData = await interactWithDatabase(`SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee_name, role.title, role.salary, department.name AS department, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name 
+                    renderTable(`SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee_name, role.title, role.salary, department.name AS department, CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name 
                     FROM employee 
                     JOIN role ON employee.role_id = role.id 
                     LEFT JOIN department ON role.department_id = department.id 
                     LEFT JOIN employee manager ON manager.id = employee.manager_id;`);
-
-                    // Render table to terminal
-                    console.table(employeeData);
-
-                    return mainMenu();
                 }
                 // If user chooses to add a department,
                 else if (response.choice === "Add A Department") {
-                    // Prompt user to enter department name
-                    inquirer
-                        .prompt(addDepartmentQuestion)
-                        .then((response) => {
-                            // Ensure department name is capitalized
-                            let uppercaseDepartment = capitalizeFirstLetter(response.name);
-
-                            // Insert new department into department table
-                            workplaceDatabase.query(`INSERT INTO department (name) VALUES ("${uppercaseDepartment}");`, function (err, results) {
-                                if (err) {
-                                    console.log(err);
-                                } else {
-                                    console.log(`${uppercaseDepartment} successfully inserted into department table.`);
-                                }
-
-                                return mainMenu();
-                            });
-                        })
+                    addDepartment();
                 }
                 // If user chooses to add a role,
                 else if (response.choice === "Add A Role") {
@@ -129,6 +85,41 @@ function interactWithDatabase(query) {
     });
 }
 
+// Render table to terminal given MySQL query, call mainMenu()
+async function renderTable(query) {
+    let tableData = await interactWithDatabase(query);
+
+    // Render table to terminal
+    console.table(tableData);
+
+    return mainMenu();
+}
+
+// Add new department to department table
+function addDepartment() {
+    // Prompt user to enter department name
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "Enter name of department: ",
+                name: "name"
+            }
+        ])
+        .then((response) => {
+            // Insert new department into department table
+            workplaceDatabase.query(`INSERT INTO department (name) VALUES ("${capitalizeFirstLetter(response.name)}");`, function (err, results) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log(`${capitalizeFirstLetter(response.name)} successfully inserted into department table.`);
+                }
+
+                return mainMenu();
+            });
+        })
+}
+
 // Add new role to role table
 async function addRole() {
     // Retrieve all departments, create an array of department objects with name and id
@@ -139,7 +130,7 @@ async function addRole() {
         value: department.id
     }))
 
-    // Ask user for information about their new role
+    // Prompt user for information about their new role
     inquirer
         .prompt([
             {
@@ -198,7 +189,7 @@ async function addEmployee() {
         value: employee.id
     }))
 
-    // Ask user for information about their new employee
+    // Prompt user for information about their new employee
     inquirer
         .prompt([
             {
@@ -264,7 +255,7 @@ async function updateRole() {
         value: employee.id
     }))
 
-    // Ask user for employee and new role
+    // Prompt user for employee and new role
     inquirer
         .prompt([
             {
