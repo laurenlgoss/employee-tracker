@@ -14,7 +14,7 @@ const workplaceDatabase = mysql.createConnection(
 );
 
 // Create a question to ask user how they would like to interact with the database
-const MenuQuestion = [
+const menuQuestion = [
     {
         type: "list",
         message: "What would you like to do?",
@@ -23,11 +23,31 @@ const MenuQuestion = [
     }
 ];
 
+// Create a question to ask user for information about their new department
 const addDepartmentQuestion = [
     {
         type: "input",
         message: "Enter name of department: ",
         name: "name"
+    }
+];
+
+// Create questions to ask user for information about their new role
+const addRoleQuestions = [
+    {
+        type: "input",
+        message: "Enter title of role: ",
+        name: "title"
+    },
+    {
+        type: "input",
+        message: "Enter salary of role: ",
+        name: "salary"
+    },
+    {
+        type: "input",
+        message: "Enter department of role: ",
+        name: "department"
     }
 ];
 
@@ -38,27 +58,35 @@ function init() {
 // Initialize inquirer session
 function mainMenu() {
     inquirer
-        .prompt(MenuQuestion)
-        .then((response) => {
+        .prompt(menuQuestion)
+        .then( async (response) => {
             if (response.choice !== "Quit") {
                 // If user chooses to view all departments,
                 if (response.choice === "View All Departments") {
-                    // Render department table to terminal
-                    renderTable("SELECT * FROM department LIMIT 100;");
+                    let departmentData = await interactWithDatabase("SELECT * FROM department LIMIT 100;");
+
+                    // Render table to terminal
+                    console.table(departmentData);
 
                     return mainMenu();
                 }
                 // If user chooses to view all roles,
                 else if (response.choice === "View All Roles") {
-                    // Join role and department tables, render table to terminal
-                    renderTable("SELECT * FROM role JOIN department ON role.department_id = department.id;");
+                    // Join role and department tables
+                    let roleData = await interactWithDatabase("SELECT * FROM role JOIN department ON role.department_id = department.id;");
+
+                    // Render table to terminal
+                    console.table(roleData);
 
                     return mainMenu();
                 }
                 // If user chooses to view all employees,
                 else if (response.choice === "View All Employees") {
-                    // Join employee and role tables, render table to terminal
-                    renderTable("SELECT * FROM employee JOIN role ON employee.role_id = role.id;");
+                    // Join employee and role tables
+                    let employeeData = await interactWithDatabase("SELECT * FROM employee JOIN role ON employee.role_id = role.id;");
+
+                    // Render table to terminal
+                    console.table(employeeData);
 
                     return mainMenu();
                 }
@@ -68,10 +96,12 @@ function mainMenu() {
                     inquirer
                         .prompt(addDepartmentQuestion)
                         .then((response) => {
-                            workplaceDatabase.query(`INSERT INTO department (name) VALUES ("${response.name}");`, function (err, results) {
-                                console.log(results);
-                                
-                                console.log(`${response.name} successfully inserted into department table.`)
+                            // Ensure department name is capitalized
+                            let uppercaseDepartment = capitalizeFirstLetter(response.name);
+
+                            // Insert new department into department table
+                            workplaceDatabase.query(`INSERT INTO department (name) VALUES ("${uppercaseDepartment}");`, function (err, results) {
+                                console.log(`${uppercaseDepartment} successfully inserted into department table.`);
 
                                 return mainMenu();
                             });
@@ -79,9 +109,26 @@ function mainMenu() {
                 }
                 // If user chooses to add a role,
                 else if (response.choice === "Add A Role") {
-                    console.log("add role row");
+                    // Prompt user to enter information about role
+                    inquirer
+                        .prompt(addRoleQuestions)
+                        .then( async (response) => {
+                            // Ensure department and role name are capitalized
+                            let uppercaseDepartment = capitalizeFirstLetter(response.department);
+                            let uppercaseRole = capitalizeFirstLetter(response.title);
 
-                    return mainMenu();
+                            // // Convert given department name into department id
+                            let departmentId = await interactWithDatabase(`SELECT id FROM department WHERE name = "${uppercaseDepartment}";`);
+
+                            console.log("departmentId: " + departmentId);
+
+                            // Insert new role into role table
+                            workplaceDatabase.query(`INSERT INTO role (title, salary, department_id) VALUES ("${uppercaseRole}", ${response.salary}, ${departmentId});`, function (err, results) {
+                                console.log(`${uppercaseRole} successfully inserted into role table.`);
+
+                                return mainMenu();
+                            });
+                        })
                 }
                 // If user chooses to add an employee,
                 else if (response.choice === "Add An Employee") {
@@ -103,12 +150,28 @@ function mainMenu() {
         })
 }
 
-// Take in MySQL query, render given table to terminal
-function renderTable(query) {
-    workplaceDatabase.query(query, function (err, results) {
-        console.log(`\n`);
-        console.table(results);
+// Return promise with results of given MySQL query
+function interactWithDatabase(query) {
+    return new Promise((resolve, reject) => {
+        workplaceDatabase.query(query, function (err, results) {
+            if (err) {
+                return reject(err);
+            } else {
+                return resolve(results);
+            }
+        })
     });
+}
+
+// Capitalize first letter of inputted string
+function capitalizeFirstLetter(string) {
+    var stringArray = string.split(" ");
+
+    for (var i = 0; i < stringArray.length; i++) {
+        stringArray[i] = stringArray[i].charAt(0).toUpperCase() + stringArray[i].slice(1);
+    }
+
+    return stringArray.join(" ");
 }
 
 init();
