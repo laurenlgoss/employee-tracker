@@ -106,9 +106,7 @@ function mainMenu() {
                 }
                 // If user chooses to update an employee role,
                 else if (response.choice === "Update An Employee Role") {
-                    console.log("change employee role");
-
-                    return mainMenu();
+                    updateRole();
                 }
             }
             // If user chooses to quit,
@@ -243,6 +241,54 @@ async function addEmployee() {
                     return mainMenu();
                 } else {
                     console.log(err);
+                }
+            })
+        })
+}
+
+// Update employee role
+async function updateRole() {
+    // Retrieve all roles, create an array of role objects with title and id
+    const roles = await interactWithDatabase("SELECT * FROM role;");
+
+    const roleArray = roles.map(role => ({
+        name: role.title,
+        value: role.id
+    }))
+
+    // Retrieve all employees, create an array of employee objects with first/last name and id
+    const employees = await interactWithDatabase("SELECT * FROM employee;");
+
+    const employeeArray = employees.map(employee => ({
+        name: employee.first_name.concat(" ", employee.last_name),
+        value: employee.id
+    }))
+
+    // Ask user for employee and new role
+    inquirer
+        .prompt([
+            {
+                type: "list",
+                choices: employeeArray,
+                message: "Choose employee to update: ",
+                name: "employee"
+            },
+            {
+                type: "list",
+                choices: roleArray,
+                message: "Choose new role: ",
+                name: "role"
+            }
+        ])
+        .then((response) => {
+            // Update employee role in employee table
+            workplaceDatabase.query(`UPDATE employee SET role_id = ${response.role} WHERE id = ${response.employee};`, function (err, results) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("Role successfully updated.");
+
+                    return mainMenu();
                 }
             })
         })
