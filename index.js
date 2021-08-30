@@ -98,26 +98,24 @@ function mainMenu() {
                 }
                 // If user chooses to add a role,
                 else if (response.choice === "Add A Role") {
-                        addRole();
-                    }
+                    addRole();
+                }
                 // If user chooses to add an employee,
                 else if (response.choice === "Add An Employee") {
-                        console.log("add employee row");
-
-                        return mainMenu();
-                    }
-                    // If user chooses to update an employee role,
-                    else if (response.choice === "Update An Employee Role") {
-                        console.log("change employee role");
-
-                        return mainMenu();
-                    }
+                    addEmployee();
                 }
-                // If user chooses to quit,
-                else {
-                    return;
+                // If user chooses to update an employee role,
+                else if (response.choice === "Update An Employee Role") {
+                    console.log("change employee role");
+
+                    return mainMenu();
                 }
-            })
+            }
+            // If user chooses to quit,
+            else {
+                return;
+            }
+        })
 }
 
 // Return promise with results of given MySQL query
@@ -135,7 +133,7 @@ function interactWithDatabase(query) {
 
 // Add new role to role table
 async function addRole() {
-    // Retrieve all departments
+    // Retrieve all departments, create an array of department objects with name and id
     const departments = await interactWithDatabase("SELECT * FROM department;");
 
     const departmentArray = departments.map(department => ({
@@ -159,7 +157,7 @@ async function addRole() {
             {
                 type: "list",
                 choices: departmentArray,
-                message: "Enter department of role: ",
+                message: "Choose department of role: ",
                 name: "department"
             }
         ])
@@ -172,8 +170,75 @@ async function addRole() {
 
             // Insert new role into role table
             workplaceDatabase.query("INSERT INTO role SET ?", roleObject, function (err, results) {
+                // If insert was successful,
                 if (results.affectedRows === 1) {
-                    console.log(`${response.title} was successfully added to role table.`);
+                    console.log(`${roleObject.title} was successfully added to role table.`);
+
+                    return mainMenu();
+                } else {
+                    console.log(err);
+                }
+            })
+        })
+}
+
+// Add new employee to employee table
+async function addEmployee() {
+    // Retrieve all roles, create an array of role objects with title and id
+    const roles = await interactWithDatabase("SELECT * FROM role;");
+
+    const roleArray = roles.map(role => ({
+        name: role.title,
+        value: role.id
+    }))
+
+    // Retrieve all employees, create an array of employee objects with first/last name and id
+    const employees = await interactWithDatabase("SELECT * FROM employee;");
+
+    const employeeArray = employees.map(employee => ({
+        name: employee.first_name.concat(" ", employee.last_name),
+        value: employee.id
+    }))
+
+    // Ask user for information about their new employee
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "Enter employee's first name: ",
+                name: "firstName"
+            },
+            {
+                type: "input",
+                message: "Enter employee's last name: ",
+                name: "lastName"
+            },
+            {
+                type: "list",
+                choices: roleArray,
+                message: "Choose role of employee: ",
+                name: "role"
+            },
+            {
+                type: "list",
+                choices: employeeArray,
+                message: "Choose manager of employee: ",
+                name: "manager"
+            }
+        ])
+        .then((response) => {
+            const employeeObject = {
+                first_name: capitalizeFirstLetter(response.firstName),
+                last_name: capitalizeFirstLetter(response.lastName),
+                role_id: response.role,
+                manager_id: response.manager
+            }
+
+            // Insert new employee into employee table
+            workplaceDatabase.query("INSERT INTO employee SET ?", employeeObject, function (err, results) {
+                // If insert was successful,
+                if (results.affectedRows === 1) {
+                    console.log(`${employeeObject.first_name.concat(" ", employeeObject.last_name)} was successfully added to role table.`);
 
                     return mainMenu();
                 } else {
